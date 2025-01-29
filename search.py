@@ -276,15 +276,27 @@ class VacuumPlanning(Problem):
 
     def computeTurnCost(self, action1, action):
         """computes turn cost as the number of 90' rotations away from current direction given by action1"""
-        print("computeTurnCost: For students to implement")
+        #print("computeTurnCost: For students to implement")
+        directions = ['UP','RIGHT','DOWN','LEFT']
 
-        return 0
+        initial = directions.index(action1)
+        final = directions.index(action)
+
+        cost = abs(final - initial)
+        if cost >= 3: cost = 4 - cost
+        return cost
 
     def findMinManhattanDist(self, pos):
         """Find a dirty room among all dirty rooms which has minimum Manhattan distance to pos
         hint: use distance_manhattan() function in utils.py"""
-        print("findMinManhattanDist: For students to implement")
-        return 0
+        #print("findMinManhattanDist: For students to implement")
+        min_dist = float('inf')
+        for thing in self.env.things:
+            if isinstance(thing, Dirt):
+                dist = distance_manhattan(pos, thing.location)
+                if dist < min_dist:
+                    min_dist = dist
+        return min_dist
 
     def findMinEuclidDist(self, pos):
         """Find a dirty room among all dirty rooms which has minimum Manhattan distance to pos
@@ -310,13 +322,27 @@ class VacuumPlanning(Problem):
 # ______________________________________________________________________________
 # Uninformed Search algorithms
 
-def breadth_first_graph_search(problem):
+def breadth_first_graph_search(problem: Problem):
     """[Figure 3.11]
     Note that this function can be implemented in a
     single line as below:
     return graph_search(problem, FIFOQueue())
     """
-    print("breadth_first_graph_search: For students to implement")
+    #print("breadth_first_graph_search: For students to implement")
+    node = Node(state=problem.initial)
+    frontier = deque([node])  # FIFO queue
+    if problem.goal_test(node.state):
+        return node, None
+    explored = list()
+    while frontier:
+        node = frontier.popleft()
+        for child in node.expand(problem):
+            s = child.state
+            if problem.goal_test(s):
+                return child, explored
+            if not s in explored:
+                explored.append(s)
+                frontier.append(child)
     return None, None
 
 
