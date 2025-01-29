@@ -301,9 +301,14 @@ class VacuumPlanning(Problem):
     def findMinEuclidDist(self, pos):
         """Find a dirty room among all dirty rooms which has minimum Manhattan distance to pos
                 hint: use distance_manhattan() function in utils.py"""
-        print("findMinEuclidDist: For students to implement")
-
-        return 0
+        #print("findMinEuclidDist: For students to implement")
+        min_dist = float('inf')
+        for thing in self.env.things:
+            if isinstance(thing, Dirt):
+                dist = distance_squared(pos, thing.location)
+                if dist < min_dist:
+                    min_dist = dist
+        return min_dist
 
     def h(self, node):
         """ Return the heuristic value for a given state. For this problem use minimum Manhattan or Euclid
@@ -346,7 +351,7 @@ def breadth_first_graph_search(problem: Problem):
     return None, None
 
 
-def depth_first_graph_search(problem):
+def depth_first_graph_search(problem: Problem):
     """
     [Figure 3.7]
     Search the deepest nodes in the search tree first.
@@ -356,7 +361,20 @@ def depth_first_graph_search(problem):
     If two paths reach a state, only use the first one.
     """
     frontier = [Node(problem.initial)]  # Stack
-
+    node = Node(state=problem.initial)
+    if problem.goal_test(node.state):
+        return node, None
+    explored = list()
+    while frontier:
+        node = frontier.pop()
+        for child in node.expand(problem):
+            s = child.state
+            if problem.goal_test(s):
+                return child, explored
+            if not s in explored:
+                explored.append(s)
+                frontier.append(child)
+    return None, None
     print("depth_first_graph_search: For students to implement")
 
 
