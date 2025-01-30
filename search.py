@@ -335,20 +335,20 @@ def breadth_first_graph_search(problem: Problem):
     """
     #print("breadth_first_graph_search: For students to implement")
     node = Node(state=problem.initial)
-    frontier = deque([node])  # FIFO queue
     if problem.goal_test(node.state):
         return node, None
+    frontier = deque([node])  # FIFO queue
     explored = list()
     while frontier:
-        node = frontier.popleft()
+        node = frontier.popleft() # FIFO queue
+        explored.append(node.state) # explore top node in frontier
         for child in node.expand(problem):
             s = child.state
-            if problem.goal_test(s):
-                return child, explored
-            if not s in explored:
-                explored.append(s)
-                frontier.append(child)
-    return None, None
+            if not s in explored and child not in frontier:
+                if problem.goal_test(s):
+                    return child, explored
+                frontier.append(child) # add child to frontier
+    return None, None # error, no solution found
 
 
 def depth_first_graph_search(problem: Problem):
@@ -360,25 +360,23 @@ def depth_first_graph_search(problem: Problem):
     Does not get trapped by loops.
     If two paths reach a state, only use the first one.
     """
-    frontier = [Node(problem.initial)]  # Stack
+    
+    #print("depth_first_graph_search: For students to implement")
     node = Node(state=problem.initial)
     if problem.goal_test(node.state):
         return node, None
+    frontier = [Node(problem.initial)]  # Stack
     explored = list()
     while frontier:
-        node = frontier.pop()
+        node = frontier.pop() # FIFO queue
+        explored.append(node.state) # explore top node in frontier
         for child in node.expand(problem):
             s = child.state
-            if problem.goal_test(s):
-                return child, explored
-            if not s in explored:
-                explored.append(s)
-                frontier.append(child)
-    return None, None
-    print("depth_first_graph_search: For students to implement")
-
-
-    return None, None
+            if not s in explored and child not in frontier:
+                if problem.goal_test(s):
+                    return child, explored
+                frontier.append(child) # add child to frontier
+    return None, None # error, no solution found
 
 
 def best_first_graph_search(problem, f=None):
