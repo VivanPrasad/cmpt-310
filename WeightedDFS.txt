@@ -1,0 +1,25 @@
+// Referencing code from search.py
+function WeightedDFS(problem : Problem) returns solution or failure
+    node <- Node(problem.initial, cost = 0)
+    if problem.goal_test(node.state):
+        return node, explored
+    frontier <- PriorityStack()
+    frontier.push(node)
+    explored <- Set()
+    while not Is-Empty(Frontier) do:
+        node <- frontier.pop()
+        explored.add(node.state)
+        for each child in EXPAND(problem.node):
+            s <- child.state
+            cumulative <- cost + problem.step_cost(node.state, child.state)
+            if s is not in explored and s not in frontier:
+                if problem.Is-GOAL(s) then return problem.node
+                child.cost <- cumulative
+                add child to frontier
+            elif s in frontier:
+                if frontier.get_cost(s) > cumulative:
+                    del frontier[s] //remove child from frontier 
+                    child.cost <- cumulative
+                    add child to frontier //add updated
+    return None, None //return failure
+                

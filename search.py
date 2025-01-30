@@ -263,35 +263,37 @@ class VacuumPlanning(Problem):
         # print("path_cost: to be done by students")
         cost = curNode.path_cost
         if (self.env.costFunc == costFunctions[0]):  # basic stepCount cost
-            cost = cost+1
+            cost = cost + 1
         elif (self.env.costFunc == costFunctions[1]):  # stepCount plus turn cost
             #print("path_cost: For students to implement")
             cost = cost + 3*self.computeTurnCost(curNode.action, action) + 1
         elif (self.env.costFunc == costFunctions[2]):  # cost function to encourage staying left of grid
             #print("path_cost: For students to implement")
             if state2[0] < self.env.width // 2:
-                cost=cost+1
+                cost = cost + 1
             else:
-                cost=cost+2
+                cost = cost + 2
         else:  # means self.env.costFunc == costFunctions[3]. cost function to encourage stay at the top half of the grid
             if state2[1] < self.env.height // 2:
-                cost=cost+1
+                cost = cost + 1
             else:
-                cost=cost+2
-
+                cost = cost + 2
         #print("Path-Cost: loc1: ", state1, ", loc2: ", state2, "= ", "curCost=", curNode.path_cost, "newCost=", cost)
         return cost
 
     def computeTurnCost(self, action1, action):
         """computes turn cost as the number of 90' rotations away from current direction given by action1"""
         #print("computeTurnCost: For students to implement")
-        directions = ['UP','RIGHT','DOWN','LEFT']
-        if not action1: action1 = 'UP'
+        directions = ['UP', 'RIGHT', 'DOWN', 'LEFT']
+        if action1 not in directions: action1 = 'UP'
+        print(action1, action)
         initial = directions.index(action1)
         final = directions.index(action)
 
-        cost = abs(final - initial)
-        if cost >= 3: cost = 4 - cost
+        cost = abs(initial - final)
+        if cost > 2:
+            cost = 4 - cost
+        print(cost)
         return cost
 
     def findMinManhattanDist(self, pos):
@@ -299,11 +301,8 @@ class VacuumPlanning(Problem):
         hint: use distance_manhattan() function in utils.py"""
         #print("findMinManhattanDist: For students to implement")
         min_dist = float('inf')
-        for thing in self.env.things:
-            if isinstance(thing, Dirt):
-                dist = distance_manhattan(pos, thing.location)
-                if dist < min_dist:
-                    min_dist = dist
+        dirty_rooms = [manhattan_distance(pos, thing.location) for thing in self.env.things if isinstance(thing, Dirt)]
+        if len(dirty_rooms) > 0: min_dist = min(dirty_rooms)
         return min_dist
 
     def findMinEuclidDist(self, pos):
@@ -311,11 +310,8 @@ class VacuumPlanning(Problem):
                 hint: use distance_manhattan() function in utils.py"""
         #print("findMinEuclidDist: For students to implement")
         min_dist = float('inf')
-        for thing in self.env.things:
-            if isinstance(thing, Dirt):
-                dist = distance_squared(pos, thing.location)
-                if dist < min_dist:
-                    min_dist = dist
+        dirty_rooms = [distance_squared(pos, thing.location) for thing in self.env.things if isinstance(thing, Dirt)]
+        if len(dirty_rooms) > 0: min_dist = min(dirty_rooms)
         return min_dist
 
     def h(self, node):
@@ -397,19 +393,25 @@ def best_first_graph_search(problem: Problem, f=None):
     a best first search you can examine the f values of the path returned.
     For f=None, the problem's h function (default heuristic function) is used"""
     f = memoize(f or problem.h, 'f')
-    node = Node(problem.initial)
+    node = Node(problem.initial,path_cost=0)
     frontier = PriorityQueue('min', f)
+    if problem.goal_test(node.state):
+        return node, None
     frontier.append(node)
-    explored = list()
+    explored = []
     #print("best_first_graph_search: For students to implement")
     while frontier:
         node = frontier.pop()
         explored.append(node.state)
         for child in node.expand(problem):
+            if problem.goal_test(child.state):
+                return child, explored
             if child not in frontier and child.state not in explored:
-                if problem.goal_test(child.state):
-                    return child, explored
                 frontier.append(child)
+            elif child in frontier:
+                if f(child) < frontier[child]:
+                    del frontier[child]
+                    frontier.append(child)
     return None, None # error, no solution found
 
 
