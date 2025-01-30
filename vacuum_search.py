@@ -435,7 +435,7 @@ class Gui(VacuumEnvironment):
             if self.is_done() or self.running is False:
                 break
             self.update_env()
-            sleep(delay)
+            #sleep(delay)
             Tk.update(self.root)
 
         if (args['auto'] == True and self.dirtCount > 0 and self.running == True):

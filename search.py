@@ -263,13 +263,21 @@ class VacuumPlanning(Problem):
         # print("path_cost: to be done by students")
         cost = curNode.path_cost
         if (self.env.costFunc == costFunctions[0]):  # basic stepCount cost
-            cost = cost + 1
+            cost = cost+1
         elif (self.env.costFunc == costFunctions[1]):  # stepCount plus turn cost
-            print("path_cost: For students to implement")
+            #print("path_cost: For students to implement")
+            cost = cost + 3*self.computeTurnCost(curNode.action, action) + 1
         elif (self.env.costFunc == costFunctions[2]):  # cost function to encourage staying left of grid
-            print("path_cost: For students to implement")
+            #print("path_cost: For students to implement")
+            if state2[0] < self.env.width // 2:
+                cost=cost+1
+            else:
+                cost=cost+2
         else:  # means self.env.costFunc == costFunctions[3]. cost function to encourage stay at the top half of the grid
-            print("path_cost: For students to implement")
+            if state2[1] < self.env.height // 2:
+                cost=cost+1
+            else:
+                cost=cost+2
 
         #print("Path-Cost: loc1: ", state1, ", loc2: ", state2, "= ", "curCost=", curNode.path_cost, "newCost=", cost)
         return cost
@@ -278,7 +286,7 @@ class VacuumPlanning(Problem):
         """computes turn cost as the number of 90' rotations away from current direction given by action1"""
         #print("computeTurnCost: For students to implement")
         directions = ['UP','RIGHT','DOWN','LEFT']
-
+        if not action1: action1 = 'UP'
         initial = directions.index(action1)
         final = directions.index(action)
 
@@ -379,7 +387,7 @@ def depth_first_graph_search(problem: Problem):
     return None, None # error, no solution found
 
 
-def best_first_graph_search(problem, f=None):
+def best_first_graph_search(problem: Problem, f=None):
     """Search the nodes with the lowest f scores first.
     You specify the function f(node) that you want to minimize; for example,
     if f is a heuristic estimate to the goal, then we have greedy best
@@ -391,9 +399,18 @@ def best_first_graph_search(problem, f=None):
     f = memoize(f or problem.h, 'f')
     node = Node(problem.initial)
     frontier = PriorityQueue('min', f)
-    print("best_first_graph_search: For students to implement")
-
-    return None, None
+    frontier.append(node)
+    explored = list()
+    #print("best_first_graph_search: For students to implement")
+    while frontier:
+        node = frontier.pop()
+        explored.append(node.state)
+        for child in node.expand(problem):
+            if child not in frontier and child.state not in explored:
+                if problem.goal_test(child.state):
+                    return child, explored
+                frontier.append(child)
+    return None, None # error, no solution found
 
 
 def reflexAgentSearch(problem):
