@@ -49,31 +49,45 @@ class MCTS: #Monte Carlo Tree Search implementation
          SELECT, EXPEND, SIMULATE, and BACKUP. Once time is up
         we use getChildWithMaxScore() to pick the node to move to
         """
-        print("MCTS: your code goes here. 10pt.")
+        #print("MCTS: your code goes here. 10pt.")
+        while time.perf_counter() < end:
+            self.selectNode(self.root)
+            self.expandNode(self.root)
+            if time.perf_counter() >= end: break
+            winner = self.simulateRandomPlay(self.root)
+            self.backPropagation(self.root, winner)
 
-        winnerNode = self.root.getChildWithMaxScore()
-        assert(winnerNode is not None)
-        return winnerNode.state.move
+        winner_node = self.root.getChildWithMaxScore()
+        assert(winner_node is not None)
+        return winner_node.state.move
 
 
     """SELECT stage function. walks down the tree using findBestNodeWithUCT()"""
-    def selectNode(self, nd):
+    def selectNode(self, nd: Node):
         node = nd
-        print("Your code goes here 5pt.")
+        #print("Your code goes here 5pt.")
+        while node.children:
+            node = self.findBestNodeWithUCT(node)
+            if node is None:
+                break
         return node
 
     def findBestNodeWithUCT(self, nd):
         """finds the child node with the highest UCT. Parse nd's children and use uctValue() to collect uct's for the
         children....."""
         childUCT = []
-        print("Your code goes here 2pt.")
-        return None
-
+        #print("Your code goes here 2pt.")
+        for child in nd.children:
+            childUCT.append((child, self.uctValue(nd.visitCount, child.winScore, child.visitCount)))
+        return max(childUCT, key=lambda x: x[1])[0] if childUCT else None
 
     def uctValue(self, parentVisit, nodeScore, nodeVisit):
         """compute Upper Confidence Value for a node"""
-        print("Your code goes here 3pt.")
-        pass
+        # print("Your code goes here 3pt.")
+        if nodeVisit == 0:
+            return float('inf')  # Explore unvisited nodes first
+        exploration_term = self.exploreFactor * math.sqrt(math.log(parentVisit) / nodeVisit)
+        return (nodeScore / nodeVisit) + exploration_term
 
     """EXPAND stage function. """
     def expandNode(self, nd):
@@ -88,13 +102,20 @@ class MCTS: #Monte Carlo Tree Search implementation
     def simulateRandomPlay(self, nd):
         # first use compute_utility() to check win possibility for the current node. IF so, return the winner's symbol X, O or N representing tie
         winStatus = self.game.compute_utility(nd.state.board, nd.state.move, nd.state.board[nd.state.move])
-        print("your code goes here 5pt.")
+        #print("Your code goes here 5pt.")
 
         """now roll out a random play down to a terminating state. """
 
         tempState = copy.deepcopy(nd.state) # to be used in the following random playout
         to_move = tempState.to_move
-        print("Your code goes here 5pt.")
+        #print("Your code goes here 5pt.")
+        while not self.isTerminalState(winStatus, tempState.moves):
+            moves = self.game.actions(tempState)
+            a = random.choice(moves) if moves else None
+            if a is not None:
+                tempState = self.game.result(tempState, a)
+                to_move = self.game.to_move(tempState)
+            winStatus = self.game.compute_utility(tempState.board, tempState.move, tempState.board[tempState.move])
 
         return ('X' if winStatus > 0 else 'O' if winStatus < 0 else 'N') # 'N' means tie
 
@@ -103,6 +124,9 @@ class MCTS: #Monte Carlo Tree Search implementation
         """propagate upword to update score and visit count from
         the current leaf node to the root node."""
         tempNode = nd
-        print("Your code goes here 5pt.")
-
-
+        #print("Your code goes here 5pt.")
+        while tempNode is not None:
+            tempNode.visitCount = tempNode.visitCount + 1
+            if winningPlayer == tempNode.state.to_move:
+                tempNode.winScore = tempNode.winScore + 1
+            tempNode = tempNode.parent
