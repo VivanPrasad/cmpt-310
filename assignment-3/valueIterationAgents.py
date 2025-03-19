@@ -73,6 +73,11 @@ class ValueIterationAgent(ValueEstimationAgent):
     def runValueIteration(self):
         # Write value iteration code here
         "*** YOUR CODE HERE ***"
+        for _ in range(self.iterations):
+            newValues = util.Counter()
+            for state in self.mdp.getStates():
+                newValues[state] = self.getGreedyUpdate(state)
+            self.values = newValues
         util.raiseNotDefined()
 
 
