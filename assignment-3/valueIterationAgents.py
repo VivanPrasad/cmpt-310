@@ -72,16 +72,12 @@ class ValueIterationAgent(ValueEstimationAgent):
 
     def runValueIteration(self):
         # Write value iteration code here
-        "*** YOUR CODE HERE ***"
         for _ in range(self.iterations):
             newValues = util.Counter()
-            for state in self.mdp.getStates():
-                newValues[state] = self.getGreedyUpdate(state)
+            for s in self.mdp.getStates():
+                newValues[s] = self.getGreedyUpdate(s)
             self.values = newValues
-        util.raiseNotDefined()
-
-
-
+        
 
     def getValue(self, state):
         """
@@ -95,9 +91,11 @@ class ValueIterationAgent(ValueEstimationAgent):
           Compute the Q-value of action in state from the
           value function stored in self.values.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
-
+        qval: float = 0
+        mdp = self.mdp
+        for next, prob in mdp.getTransitionStatesAndProbs(state, action):
+            qval += prob * (mdp.getReward(state, action, next) + (self.discount *self.values[next]))
+        return qval
 
     def computeActionFromValues(self, state):
         """
@@ -108,10 +106,12 @@ class ValueIterationAgent(ValueEstimationAgent):
           there are no legal actions, which is the case at the
           terminal state, you should return None.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
-
-
+        if self.mdp.isTerminal(state): return None
+        actions = self.mdp.getPossibleActions(state)
+        vals = util.Counter()
+        for a in actions:
+            vals[a] = self.computeQValueFromValues(state, a)
+        return vals.argMax()
 
     def getPolicy(self, state):
         return self.computeActionFromValues(state)
@@ -143,11 +143,23 @@ class PrioritizedSweepingValueIterationAgent(ValueIterationAgent):
 
     def setupAllPredecessors(self):
         #compute predecessors of all states and save it in a util.Counter() and return it
-        "*** YOUR CODE HERE ***"
+        allpreds = util.Counter()
+        for state in self.mdp.getStates():
+            for action in self.mdp.getPossibleActions(state):
+                for next, prob in self.mdp.getTransitionStatesAndProbs(state, action):
+                    if prob > 0:
+                        if not next in allpreds: allpreds[next] = set()
+                        allpreds[next].add(state)
+        return allpreds
 
     def setupPriorityQueue(self):
         # setup priority queue for all states based on their highest diff in greedy update
-        "*** YOUR CODE HERE ***"
+        pq = util.PriorityQueue()
+        for state in self.mdp.getStates():
+            if not self.mdp.isTerminal(state):
+                diff = abs(self.values[state] - self.getGreedyUpdate(state))
+                pq.update(state, -diff)
+        return pq
 
     def runValueIteration(self):
         
@@ -158,8 +170,12 @@ class PrioritizedSweepingValueIterationAgent(ValueIterationAgent):
         pq = self.setupPriorityQueue()
 
         # run priority sweeping value iteration:
-        util.raiseNotDefined()
-        "*** YOUR CODE HERE ***"
-
-
-
+        for _ in range(self.iterations):
+            if pq.isEmpty(): break
+            s = pq.pop()
+            if not self.mdp.isTerminal(s):
+                self.values[s] = self.getGreedyUpdate(s)
+            for p in allpreds[s]:
+                diff = abs(self.values[p] - self.getGreedyUpdate(p)) * -1
+                if self.theta > diff:
+                    pq.update(p, diff)
