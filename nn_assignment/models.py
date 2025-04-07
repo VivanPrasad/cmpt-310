@@ -224,12 +224,17 @@ class RegressionModel(object):
     to approximate sin(x) on the interval [-2pi, 2pi] to reasonable precision.
     """
     def __init__(self):
-        # Initialize your model parameters here. Here you setup the architecture of your NN, meaning how many
-        # layers and corresponding weights, what is the batch_size, and learning_rate.
-        "*** YOUR CODE HERE ***"
+        # Initialize your model parameters here
+        self.batch_size = 100  # Increase batch size for faster convergence
+        self.learning_rate = 0.05  # Higher learning rate for quicker updates
+        self.hidden_size = 128  # Larger hidden size for better representation
+        self.input_size = 1
+        self.output_size = 1
         
-        #util.raiseNotDefined()
-
+        self.w1 = nn.Parameter(self.input_size, self.hidden_size)
+        self.w2 = nn.Parameter(self.hidden_size, self.output_size)
+        self.b1 = nn.Parameter(1, self.hidden_size)
+        self.b2 = nn.Parameter(1, self.output_size)
 
     def run(self, x):
         """
@@ -239,18 +244,14 @@ class RegressionModel(object):
         Returns:
             A node with shape (batch_size x 1) containing predicted y-values
         """
-        "*** YOUR CODE HERE ***"
-        # Forward
+        # Forward pass through the network
         hidden = nn.ReLU(nn.AddBias(nn.Linear(x, self.w1), self.b1))
         output = nn.AddBias(nn.Linear(hidden, self.w2), self.b2)
         return output
-        #util.raiseNotDefined()
-
 
     def get_loss(self, x, y):
         """
         Computes the loss for a batch of examples.
-
         Inputs:
             x: a node with shape (batch_size x 1)
             y: a node with shape (batch_size x 1), containing the true y-values
@@ -259,26 +260,26 @@ class RegressionModel(object):
         """
         # Forward pass to compute predictions
         predictions = self.run(x)
-        # Compute the Mean Squared Error loss
+        # Compute the Mean Squared Error Loss
         loss = nn.SquareLoss(predictions, y)
         return loss
 
     def train(self, dataset):
         """
-            Trains the model.
+        Trains the model.
         """
-        "*** YOUR CODE HERE ***"
-        # Loop until convergence
-        for i in range(1000):
-            # Get the training data
-            x, y = dataset.iterate_once(self.batch_size)
-            # Get the loss
-            loss = self.get_loss(x, y)
-            # Print the loss
-            print("Iteration %d: Loss = %f" % (i, loss))
-            # Check for convergence
-            if loss < 0.01: break
-        #util.raiseNotDefined()
+        while True:
+            for x, y in dataset.iterate_once(self.batch_size):
+                loss = self.get_loss(x, y) # calculate
+                # Compute the gradients
+                gradients = nn.gradients(loss, [self.w1, self.w2, self.b1, self.b2])
+                # Update the weights
+                self.w1.update(gradients[0], -self.learning_rate)
+                self.w2.update(gradients[1], -self.learning_rate)
+                self.b1.update(gradients[2], -self.learning_rate)
+                self.b2.update(gradients[3], -self.learning_rate)
+            if nn.as_scalar(self.get_loss(nn.Constant(dataset.x), nn.Constant(dataset.y))) < 0.02: break
+            #break out with loss < 0.02
 
 ##########################################################################
 class DigitClassificationModel(object):
@@ -297,17 +298,15 @@ class DigitClassificationModel(object):
     """
     def __init__(self):
         # Initialize your model parameters here
-        "*** YOUR CODE HERE ***"
         self.batch_size = 100
-        self.learning_rate = 0.01
-        self.hidden_size = 100
+        self.learning_rate = 0.1  # Increased learning rate for faster convergence
+        self.hidden_size = 256  # Increased hidden size for better representation
         self.input_size = 784
         self.output_size = 10
         self.w1 = nn.Parameter(self.input_size, self.hidden_size)
         self.w2 = nn.Parameter(self.hidden_size, self.output_size)
         self.b1 = nn.Parameter(1, self.hidden_size)
         self.b2 = nn.Parameter(1, self.output_size)
-        #util.raiseNotDefined()
 
     def run(self, x):
         """
@@ -346,27 +345,25 @@ class DigitClassificationModel(object):
         # Compute the Softmax Loss
         loss = nn.SoftmaxLoss(predictions, y)
         return loss
-        
 
     def train(self, dataset):
         """
         Trains the model.
         """
-        "*** YOUR CODE HERE ***"
-        # Initialize the weights to zero
-        # Loop until convergence
-        for i in range(1000):
-            # Get the training data
-            x = dataset.trainingData
-            y = dataset.trainingLabels
-            # Get the loss
-            loss = self.get_loss(x, y)
-            # Print the loss
-            print("Iteration %d: Loss = %f" % (i, loss))
-            # Check for convergence
-            if loss < 0.01:
-                break
-        #util.raiseNotDefined()
+        # Loop for a fixed number of epochs
+        while True:
+            for x, y in dataset.iterate_once(self.batch_size):
+                # Compute the loss
+                loss = self.get_loss(x, y)
+                # Compute the gradients
+                gradients = nn.gradients(loss, [self.w1, self.w2, self.b1, self.b2])
+                # Update the weights
+                self.w1.update(gradients[0], -self.learning_rate)
+                self.w2.update(gradients[1], -self.learning_rate)
+                self.b1.update(gradients[2], -self.learning_rate)
+                self.b2.update(gradients[3], -self.learning_rate)
+            # Check the validation accuracy
+            if dataset.get_validation_accuracy() >= 0.975: break
 
 ###################################################################################
 class LanguageIDModel(object):
@@ -387,11 +384,12 @@ class LanguageIDModel(object):
 
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
-        self.batch_size = 100
-        self.learning_rate = 0.01
-        self.hidden_size = 100
+        self.batch_size = 100  # Increase batch size for faster convergence
+        self.learning_rate = 0.06  # Higher learning rate for quicker updates
+        self.hidden_size = 128  # Larger hidden size for better representation
         self.input_size = 47
         self.output_size = 5
+        
         self.w1 = nn.Parameter(self.input_size, self.hidden_size)
         self.w2 = nn.Parameter(self.hidden_size, self.output_size)
         self.b1 = nn.Parameter(1, self.hidden_size)
@@ -427,16 +425,17 @@ class LanguageIDModel(object):
             A node with shape (batch_size x 5) containing predicted scores
                 (also called logits)
         """
-        "*** YOUR CODE HERE ***"
         # Initialize the hidden state
-        hidden = nn.ReLU(nn.AddBias(nn.Linear(xs[0], self.w1), self.b1))
-        # Iterate through the characters in the word
-        for i in range(1, len(xs)):
-            # Update the hidden state
-            hidden = nn.ReLU(nn.AddBias(nn.Linear(xs[i], self.w1), self.b1) + nn.Linear(hidden, self.w2))
-        # Compute the output layer
-        output = nn.AddBias(nn.Linear(hidden, self.w2), self.b2)
+        h = nn.ReLU(nn.AddBias(nn.Linear(xs[0], self.w1), self.b1))
+        
+        # Process each character in the sequence
+        for x in xs[1:]:
+            h = nn.ReLU(nn.Add(nn.AddBias(nn.Linear(x, self.w1), self.b1),h))
+        
+        # Compute the output logits
+        output = nn.AddBias(nn.Linear(h, self.w2), self.b2)
         return output
+        
         
     def get_loss(self, xs, y):
         """
@@ -474,4 +473,4 @@ class LanguageIDModel(object):
                 self.w2.update(gradients[1], -self.learning_rate)
                 self.b1.update(gradients[2], -self.learning_rate)
                 self.b2.update(gradients[3], -self.learning_rate)
-            if dataset.get_validation_accuracy() > 0.85: break
+            if dataset.get_validation_accuracy() > 0.83: break
