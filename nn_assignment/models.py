@@ -51,7 +51,19 @@ class NaiveBayesDigitClassificationModel(object):
             datum = trainingData[i]
             label = int(trainingLabels[i])
             "*** YOUR CODE HERE to complete populating commonPrior, commonCounts, and commonConditionalProb ***"
-            util.raiseNotDefined()
+            commonPrior[label] += 1
+            for feat in self.features:
+                if datum[feat] == 1:
+                    commonCounts[feat, label] += 1
+                else:
+                    commonCounts[feat, label] += 0
+            for feat in self.features:
+                if datum[feat] == 1:
+                    commonConditionalProb[feat, label] += 1
+                else:
+                    commonConditionalProb[feat, label] += 0
+            # end of populating commonPrior, commonCounts, and commonConditionalProb
+            #util.raiseNotDefined()
 
         for k in kgrid:  # smoothing parameter tuning loop
             prior = util.Counter()
@@ -69,13 +81,18 @@ class NaiveBayesDigitClassificationModel(object):
             # smoothing:
             for label in self.legalLabels:
                 for feat in self.features:
-                    "*** YOUR CODE HERE to update conditionalProb and counts using Lablace smoothing ***"
-                    util.raiseNotDefined()
+                    # Laplace smoothing
+                    conditionalProb[feat, label] += k
+                    prior[label] += k * len(self.features)
 
-            # normalizing:
+            # normalising:
             prior.normalize()
-            "**** YOUR CODE HERE to normalize conditionalProb "
-
+            # Normalize conditionalProb
+            for label in self.legalLabels:
+                total = sum(conditionalProb[feat, label] for feat in self.features)
+                for feat in self.features:
+                    conditionalProb[feat, label] /= total
+            # end the normalisingg
 
             self.prior = prior
             self.conditionalProb = conditionalProb
@@ -106,7 +123,16 @@ class NaiveBayesDigitClassificationModel(object):
         for datum in testData:
             ("***YOUR CODE HERE***  use calculateLogJointProbabilities() to compute posterior per datum  and use"
              "it to find best guess digit for datum and at the end accumulate in self.posteriors for later use")
-            util.raiseNotDefined()
+            logJoint = self.calculateLogJointProbabilities(datum)
+            bestLabel = None
+            bestProb = float("-inf")
+            for label in self.legalLabels:
+                if logJoint[label] > bestProb:
+                    bestProb = logJoint[label]
+                    bestLabel = label
+            guesses.append(bestLabel)
+            self.posteriors.append(logJoint)
+            #util.raiseNotDefined()
 
         return guesses
 
@@ -123,7 +149,15 @@ class NaiveBayesDigitClassificationModel(object):
 
         for label in self.legalLabels:
             "*** YOUR CODE HERE, to populate logJoint() list ***"
-            util.raiseNotDefined()
+            # Calculate the log joint probability
+            logJoint[label] = math.log(self.prior[label])
+            for feat in self.features:
+                if datum[feat] == 1:
+                    logJoint[label] += math.log(self.conditionalProb[feat, label])
+                else:
+                    logJoint[label] += math.log(1 - self.conditionalProb[feat, label])
+            # end of populating logJoint
+            #util.raiseNotDefined()
         return logJoint
 
 ################################################################################3
@@ -154,7 +188,7 @@ class PerceptronModel(object):
         Returns: a node containing a single number (the score)
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return nn.DotProduct(self.w, x)
 
     def get_prediction(self, x):
         """
@@ -163,14 +197,24 @@ class PerceptronModel(object):
         Returns: 1 or -1
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        score = nn.as_scalar(self.run(x)) #single number
+        return 1 if score >= 0 else -1
 
     def train(self, dataset):
         """
         Train the perceptron until convergence.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Loop until convergence
+        while True:
+            miss = False
+            for x, y in dataset.iterate_once(1):
+                prediction = self.get_prediction(x)
+                if prediction != nn.as_scalar(y):
+                    miss = True
+                    self.w.update(x, nn.as_scalar(y))
+            if not miss:
+                break
 
 ########################################################################33
 class RegressionModel(object):
@@ -183,7 +227,8 @@ class RegressionModel(object):
         # Initialize your model parameters here. Here you setup the architecture of your NN, meaning how many
         # layers and corresponding weights, what is the batch_size, and learning_rate.
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        
+        #util.raiseNotDefined()
 
 
     def run(self, x):
@@ -195,7 +240,11 @@ class RegressionModel(object):
             A node with shape (batch_size x 1) containing predicted y-values
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Forward
+        hidden = nn.ReLU(nn.AddBias(nn.Linear(x, self.w1), self.b1))
+        output = nn.AddBias(nn.Linear(hidden, self.w2), self.b2)
+        return output
+        #util.raiseNotDefined()
 
 
     def get_loss(self, x, y):
@@ -208,15 +257,28 @@ class RegressionModel(object):
                 to be used for training
         Returns: a loss node
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Forward pass to compute predictions
+        predictions = self.run(x)
+        # Compute the Mean Squared Error loss
+        loss = nn.SquareLoss(predictions, y)
+        return loss
 
     def train(self, dataset):
         """
             Trains the model.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Loop until convergence
+        for i in range(1000):
+            # Get the training data
+            x, y = dataset.iterate_once(self.batch_size)
+            # Get the loss
+            loss = self.get_loss(x, y)
+            # Print the loss
+            print("Iteration %d: Loss = %f" % (i, loss))
+            # Check for convergence
+            if loss < 0.01: break
+        #util.raiseNotDefined()
 
 ##########################################################################
 class DigitClassificationModel(object):
@@ -236,7 +298,16 @@ class DigitClassificationModel(object):
     def __init__(self):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        self.batch_size = 100
+        self.learning_rate = 0.01
+        self.hidden_size = 100
+        self.input_size = 784
+        self.output_size = 10
+        self.w1 = nn.Parameter(self.input_size, self.hidden_size)
+        self.w2 = nn.Parameter(self.hidden_size, self.output_size)
+        self.b1 = nn.Parameter(1, self.hidden_size)
+        self.b2 = nn.Parameter(1, self.output_size)
+        #util.raiseNotDefined()
 
     def run(self, x):
         """
@@ -252,8 +323,10 @@ class DigitClassificationModel(object):
             A node with shape (batch_size x 10) containing predicted scores
                 (also called logits)
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Forward pass through the network
+        hidden = nn.ReLU(nn.AddBias(nn.Linear(x, self.w1), self.b1))
+        output = nn.AddBias(nn.Linear(hidden, self.w2), self.b2)
+        return output
 
     def get_loss(self, x, y):
         """
@@ -268,15 +341,32 @@ class DigitClassificationModel(object):
             y: a node with shape (batch_size x 10)
         Returns: a loss node
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Forward pass to compute predictions
+        predictions = self.run(x)
+        # Compute the Softmax Loss
+        loss = nn.SoftmaxLoss(predictions, y)
+        return loss
+        
 
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Initialize the weights to zero
+        # Loop until convergence
+        for i in range(1000):
+            # Get the training data
+            x = dataset.trainingData
+            y = dataset.trainingLabels
+            # Get the loss
+            loss = self.get_loss(x, y)
+            # Print the loss
+            print("Iteration %d: Loss = %f" % (i, loss))
+            # Check for convergence
+            if loss < 0.01:
+                break
+        #util.raiseNotDefined()
 
 ###################################################################################
 class LanguageIDModel(object):
@@ -297,7 +387,15 @@ class LanguageIDModel(object):
 
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        self.batch_size = 100
+        self.learning_rate = 0.01
+        self.hidden_size = 100
+        self.input_size = 47
+        self.output_size = 5
+        self.w1 = nn.Parameter(self.input_size, self.hidden_size)
+        self.w2 = nn.Parameter(self.hidden_size, self.output_size)
+        self.b1 = nn.Parameter(1, self.hidden_size)
+        self.b2 = nn.Parameter(1, self.output_size)
 
 
     def run(self, xs):
@@ -330,8 +428,16 @@ class LanguageIDModel(object):
                 (also called logits)
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
-
+        # Initialize the hidden state
+        hidden = nn.ReLU(nn.AddBias(nn.Linear(xs[0], self.w1), self.b1))
+        # Iterate through the characters in the word
+        for i in range(1, len(xs)):
+            # Update the hidden state
+            hidden = nn.ReLU(nn.AddBias(nn.Linear(xs[i], self.w1), self.b1) + nn.Linear(hidden, self.w2))
+        # Compute the output layer
+        output = nn.AddBias(nn.Linear(hidden, self.w2), self.b2)
+        return output
+        
     def get_loss(self, xs, y):
         """
         Computes the loss for a batch of examples.
@@ -347,7 +453,12 @@ class LanguageIDModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Forward pass to compute predictions
+        predictions = self.run(xs)
+        # Compute the Softmax Loss
+        loss = nn.SoftmaxLoss(predictions, y)
+        return loss
+        
 
     def train(self, dataset):
         """
@@ -355,4 +466,12 @@ class LanguageIDModel(object):
         """
         "*** YOUR CODE HERE ***"
         "*** hint: User get_validation_accuracy() to decide when to finish learning ***"
-        util.raiseNotDefined()
+        while True:
+            for xs, y in dataset.iterate_once(self.batch_size):
+                loss = self.get_loss(xs, y)
+                gradients = nn.gradients(loss, [self.w1, self.w2, self.b1, self.b2])
+                self.w1.update(gradients[0], -self.learning_rate)
+                self.w2.update(gradients[1], -self.learning_rate)
+                self.b1.update(gradients[2], -self.learning_rate)
+                self.b2.update(gradients[3], -self.learning_rate)
+            if dataset.get_validation_accuracy() > 0.85: break
